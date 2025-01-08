@@ -1,58 +1,45 @@
 import { useState } from 'react';
 
-
-class LangflowClient {
-  constructor(baseURL, applicationToken) {
-    this.baseURL = baseURL;
-    this.applicationToken = applicationToken;
-  }
-
-  async post(endpoint, body, headers = { 'Content-Type': 'application/json' }) {
-    headers['Authorization'] = `Bearer ${this.applicationToken}`;
-    const url = `${this.baseURL}${endpoint}`;
-    try {
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: headers,
-        body: JSON.stringify(body),
-      });
-      const responseMessage = await response.json();
-      if (!response.ok) {
-        throw new Error(`${response.status} ${response.statusText} - ${JSON.stringify(responseMessage)}`);
-      }
-      return responseMessage;
-    } catch (error) {
-      console.error('Request Error:', error.message);
-      throw error;
-    }
-  }
-
-  async initiateSession(flowId, langflowId, inputValue, inputType = 'chat', outputType = 'chat', stream = false, tweaks = {}) {
-    const endpoint = `/lf/${langflowId}/api/v1/run/${flowId}?stream=${stream}`;
-    return this.post(endpoint, { input_value: inputValue, input_type: inputType, output_type: outputType, tweaks: tweaks });
-}
-}
-
 function Chatbot() {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
 
   const handleSendMessage = async () => {
-    if (!input) return;
+    if (!input.trim()) return;
 
-    const flowId = import.meta.env.LANGFLOW_FLOW_ID;
-    const langflowId = import.meta.env.LANGFLOW_ID;
-    const applicationToken = import.meta.env.LANGFLOW_APPLICATION_TOKEN;
+    // Add user message to the chat
+    setMessages((prevMessages) => [
+      ...prevMessages,
+      { type: 'user', text: input },
+    ]);
 
-    const client = new LangflowClient('https://api.langflow.astra.datastax.com', applicationToken);
+    // Fetch bot response from the API
     try {
-      const response = await client.initiateSession(flowId, langflowId, input);
-      const outputMessage = response.outputs[0]?.outputs[0]?.outputs?.message?.text || 'No response';
-      setMessages((prev) => [...prev, { type: 'user', text: input }, { type: 'bot', text: outputMessage }]);
-      setInput('');
+      const response = await fetch('http://localhost:3000/run-flow', {
+        method: 'POST', // Assuming POST method
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ inputValue: input }),
+      });
+      const data = await response.json();
+
+      console.log('Bot response:', data.data.outputs[0].outputs[0].messages[0].message);
+      // Add bot response to the chat
+      setMessages((prevMessages) => [
+        ...prevMessages,
+        { type: 'bot', text: data.data.outputs[0].outputs[0].messages[0].message || 'Sorry, I did not understand that.' },
+      ]);
     } catch (error) {
-      console.error('Error:', error.message);
+      console.error('Error fetching bot response:', error);
+      setMessages((prevMessages) => [
+        ...prevMessages,
+        { type: 'bot', text: 'Error fetching response. Please try again later.' },
+      ]);
     }
+
+    // Clear input field
+    setInput('');
   };
 
   return (
