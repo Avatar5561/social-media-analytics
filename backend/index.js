@@ -1,8 +1,9 @@
 import express from 'express';
 import bodyParser from 'body-parser';
 import fetch from 'node-fetch';
-import {EventSource} from 'eventsource';
-import dotenv from 'dotenv'
+import { EventSource } from 'eventsource';
+import dotenv from 'dotenv';
+import cors from 'cors'; // Import the cors package
 
 class LangflowClient {
     constructor(baseURL, applicationToken) {
@@ -53,6 +54,7 @@ class LangflowClient {
 const app = express();
 const port = 3000;
 app.use(bodyParser.json());
+app.use(cors()); // Enable CORS for all routes
 dotenv.config();
 
 // Replace with your actual token and base URL
@@ -62,7 +64,7 @@ const langflowClient = new LangflowClient(baseURL, applicationToken);
 
 // API Endpoint to run the flow
 app.post('/run-flow', async (req, res) => {
-    const {   inputValue, inputType = 'chat', outputType = 'chat', stream = false, tweaks = {} } = req.body;
+    const { inputValue, inputType = 'chat', outputType = 'chat', stream = false, tweaks = {} } = req.body;
     const flowIdOrName = process.env.LANGFLOW_FLOWID_NAME;
     const langflowId = process.env.LANGFLOW_FLOWID;
 
