@@ -23,7 +23,8 @@ function Chatbot() {
 
     // Fetch bot response from the API
     try {
-      const response = await fetch('http://localhost:3000/run-flow', {
+      console.log('Sending request to:', import.meta.env.VITE_BACKEND_URL);
+      const response = await fetch(import.meta.env.VITE_BACKEND_URL, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
